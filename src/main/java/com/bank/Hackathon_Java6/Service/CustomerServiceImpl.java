@@ -22,6 +22,7 @@ public class CustomerServiceImpl implements CustomerService {
 
 	
     private final CustomerRepository repository ;
+    private final RegistrationMailService registrationMailService;
 
     private final Random random = new Random();
 
@@ -46,11 +47,14 @@ public class CustomerServiceImpl implements CustomerService {
                 .build();
 
         repository.save(customer);
+        MailDeliveryResult mailDeliveryResult = registrationMailService.sendRegistrationSuccessEmail(customer);
 
         return Map.of(
                 "customerId", customerId,
                 "name", customer.getName(),
-                "message", "Registration successful"
+                "message", "Registration successful",
+                "mailStatus", mailDeliveryResult.status(),
+                "mailMessage", mailDeliveryResult.message()
         );
     }
 
