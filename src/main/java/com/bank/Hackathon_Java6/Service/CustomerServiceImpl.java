@@ -73,6 +73,7 @@ public class CustomerServiceImpl implements CustomerService {
         if (!passwordMatches(dto.getPassword(), customer.getPasswordHash())) {
             throw new InvalidCredentialsException();
         }
+        encryptLegacyPlainTextPasswordIfNeeded(dto.getPassword(), customer);
         String token = jwtService.generateToken(customer.getCustomerId());
 
         return Map.of(
@@ -85,10 +86,21 @@ public class CustomerServiceImpl implements CustomerService {
     }
 
     private boolean passwordMatches(String rawPassword, String storedPassword) {
-        if (storedPassword != null && storedPassword.startsWith("$2")) {
+        if (isEncryptedPassword(storedPassword)) {
             return passwordEncoder.matches(rawPassword, storedPassword);
         }
         return storedPassword != null && storedPassword.equals(rawPassword);
+    }
+
+    private void encryptLegacyPlainTextPasswordIfNeeded(String rawPassword, Customer customer) {
+        if (!isEncryptedPassword(customer.getPasswordHash())) {
+            customer.setPasswordHash(passwordEncoder.encode(rawPassword));
+            repository.save(customer);
+        }
+    }
+
+    private boolean isEncryptedPassword(String password) {
+        return password != null && password.startsWith("$2");
     }
 
     private Integer generateCustomerId() {
