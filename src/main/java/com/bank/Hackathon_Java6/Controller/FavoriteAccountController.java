@@ -2,6 +2,9 @@ package com.bank.Hackathon_Java6.Controller;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -43,6 +46,7 @@ public class FavoriteAccountController {
             @PathVariable Integer customerId,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "5") int size) {
+        validateAuthenticatedCustomer(customerId);
         return ResponseEntity.ok(favoriteAccountService.getAccountsByCustomer(customerId, page, size));
     }
 
@@ -55,6 +59,7 @@ public class FavoriteAccountController {
     public ResponseEntity<FavoriteAccountResponseDTO> getAccountById(
             @PathVariable Integer customerId,
             @PathVariable Integer accountId) {
+        validateAuthenticatedCustomer(customerId);
         return ResponseEntity.ok(favoriteAccountService.getAccountById(customerId, accountId));
     }
 
@@ -70,6 +75,7 @@ public class FavoriteAccountController {
     public ResponseEntity<FavoriteAccountResponseDTO> createAccount(
             @PathVariable Integer customerId,
             @Valid @RequestBody FavoriteAccountRequestDTO requestDTO) {
+        validateAuthenticatedCustomer(customerId);
         FavoriteAccountResponseDTO created = favoriteAccountService.createAccount(customerId, requestDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -85,6 +91,7 @@ public class FavoriteAccountController {
             @PathVariable Integer customerId,
             @PathVariable Integer accountId,
             @Valid @RequestBody FavoriteAccountRequestDTO requestDTO) {
+        validateAuthenticatedCustomer(customerId);
         return ResponseEntity.ok(favoriteAccountService.updateAccount(customerId, accountId, requestDTO));
     }
 
@@ -97,7 +104,15 @@ public class FavoriteAccountController {
     public ResponseEntity<Void> deleteAccount(
             @PathVariable Integer customerId,
             @PathVariable Integer accountId) {
+        validateAuthenticatedCustomer(customerId);
         favoriteAccountService.deleteAccount(customerId, accountId);
         return ResponseEntity.noContent().build();
+    }
+
+    private void validateAuthenticatedCustomer(Integer customerId) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !customerId.equals(authentication.getPrincipal())) {
+            throw new AccessDeniedException("You can only access your own favorite accounts");
+        }
     }
 }

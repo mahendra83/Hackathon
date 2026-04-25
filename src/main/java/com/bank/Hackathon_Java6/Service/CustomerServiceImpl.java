@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Random;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.bank.Hackathon_Java6.Dto.CustomerLoginDTO;
@@ -23,6 +24,8 @@ public class CustomerServiceImpl implements CustomerService {
 	
     private final CustomerRepository repository ;
     private final RegistrationMailService registrationMailService;
+    private final JwtService jwtService;
+    private final PasswordEncoder passwordEncoder;
 
     private final Random random = new Random();
 
@@ -42,16 +45,19 @@ public class CustomerServiceImpl implements CustomerService {
                 .customerId(customerId)
                 .name(dto.getName())
                 .email(dto.getEmail())
-                .passwordHash(dto.getPassword()) // plain for now (as per your requirement)
+                .passwordHash(passwordEncoder.encode(dto.getPassword()))
                 .createdAt(LocalDateTime.now())
                 .build();
 
         repository.save(customer);
         MailDeliveryResult mailDeliveryResult = registrationMailService.sendRegistrationSuccessEmail(customer);
+        String token = jwtService.generateToken(customerId);
 
         return Map.of(
                 "customerId", customerId,
                 "name", customer.getName(),
+                "tokenType", "Bearer",
+                "token", token,
                 "message", "Registration successful",
                 "mailStatus", mailDeliveryResult.status(),
                 "mailMessage", mailDeliveryResult.message()
@@ -64,16 +70,25 @@ public class CustomerServiceImpl implements CustomerService {
         Customer customer = repository.findById(dto.getCustomerId())
                 .orElseThrow(InvalidCredentialsException::new); // ✅ don't expose "not found"
 
-        // ✅ Password validation
-        if (!customer.getPasswordHash().equals(dto.getPassword())) {
+        if (!passwordMatches(dto.getPassword(), customer.getPasswordHash())) {
             throw new InvalidCredentialsException();
         }
+        String token = jwtService.generateToken(customer.getCustomerId());
 
         return Map.of(
                 "customerId", customer.getCustomerId(),
                 "name", customer.getName(),
+                "tokenType", "Bearer",
+                "token", token,
                 "message", "Login successful"
         );
+    }
+
+    private boolean passwordMatches(String rawPassword, String storedPassword) {
+        if (storedPassword != null && storedPassword.startsWith("$2")) {
+            return passwordEncoder.matches(rawPassword, storedPassword);
+        }
+        return storedPassword != null && storedPassword.equals(rawPassword);
     }
 
     private Integer generateCustomerId() {
