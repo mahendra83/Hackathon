@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import com.bank.Hackathon_Java6.Dto.CustomerLoginDTO;
 import com.bank.Hackathon_Java6.Dto.CustomerRegisterDTO;
 import com.bank.Hackathon_Java6.Dto.ForgotCustomerIdRequestDTO;
+import com.bank.Hackathon_Java6.Dto.ResetPasswordRequestDTO;
 import com.bank.Hackathon_Java6.Service.CustomerService;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -62,5 +63,25 @@ class CustomerControllerTest {
                 .containsEntry("emailExists", true)
                 .containsEntry("message", "Customer ID reminder processed");
         verify(customerService).forgotCustomerId(dto);
+    }
+
+    @Test
+    void resetPasswordDelegatesToService() {
+        ResetPasswordRequestDTO dto = ResetPasswordRequestDTO.builder()
+                .customerId(12345)
+                .newPassword("newSecret")
+                .build();
+        when(customerService.resetPassword(dto)).thenReturn(Map.of(
+                "customerId", 12345,
+                "message", "Password reset successful"
+        ));
+
+        ResponseEntity<Map<String, Object>> response = controller.resetPassword(dto);
+
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        assertThat(response.getBody())
+                .containsEntry("customerId", 12345)
+                .containsEntry("message", "Password reset successful");
+        verify(customerService).resetPassword(dto);
     }
 }

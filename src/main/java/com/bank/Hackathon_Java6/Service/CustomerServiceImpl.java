@@ -10,7 +10,9 @@ import org.springframework.stereotype.Service;
 import com.bank.Hackathon_Java6.Dto.CustomerLoginDTO;
 import com.bank.Hackathon_Java6.Dto.CustomerRegisterDTO;
 import com.bank.Hackathon_Java6.Dto.ForgotCustomerIdRequestDTO;
+import com.bank.Hackathon_Java6.Dto.ResetPasswordRequestDTO;
 import com.bank.Hackathon_Java6.Entity.Customer;
+import com.bank.Hackathon_Java6.Exception.CustomerNotFoundException;
 import com.bank.Hackathon_Java6.Exception.EmailAlreadyExistsException;
 import com.bank.Hackathon_Java6.Exception.InvalidCredentialsException;
 import com.bank.Hackathon_Java6.Repository.CustomerRepository;
@@ -106,6 +108,21 @@ public class CustomerServiceImpl implements CustomerService {
                         "emailExists", false,
                         "message", "No customer found for this email"
                 ));
+    }
+
+    @Override
+    public Map<String, Object> resetPassword(ResetPasswordRequestDTO dto) {
+        Customer customer = repository.findById(dto.getCustomerId())
+                .orElseThrow(() -> new CustomerNotFoundException(dto.getCustomerId()));
+
+        customer.setPasswordHash(passwordEncoder.encode(dto.getNewPassword()));
+        repository.save(customer);
+        loginAttemptService.recordSuccessfulAttempt(dto.getCustomerId());
+
+        return Map.of(
+                "customerId", customer.getCustomerId(),
+                "message", "Password reset successful"
+        );
     }
 
     private boolean passwordMatches(String rawPassword, String storedPassword) {

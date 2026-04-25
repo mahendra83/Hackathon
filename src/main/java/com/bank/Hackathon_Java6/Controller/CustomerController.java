@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.bank.Hackathon_Java6.Dto.CustomerLoginDTO;
 import com.bank.Hackathon_Java6.Dto.CustomerRegisterDTO;
 import com.bank.Hackathon_Java6.Dto.ForgotCustomerIdRequestDTO;
+import com.bank.Hackathon_Java6.Dto.ResetPasswordRequestDTO;
 import com.bank.Hackathon_Java6.Service.CustomerService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -46,5 +47,12 @@ public class CustomerController {
             @Valid @RequestBody ForgotCustomerIdRequestDTO dto) {
 
         return ResponseEntity.ok(service.forgotCustomerId(dto));
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<Map<String, Object>> resetPassword(
+            @Valid @RequestBody ResetPasswordRequestDTO dto) {
+
+        return ResponseEntity.ok(service.resetPassword(dto));
     }
 }
