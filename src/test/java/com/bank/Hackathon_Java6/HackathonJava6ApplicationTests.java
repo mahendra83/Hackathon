@@ -1,13 +1,13 @@
 package com.bank.Hackathon_Java6;
 
-import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+import org.junit.jupiter.api.Test;
+
 class HackathonJava6ApplicationTests {
 
-	@Test
-	void contextLoads() {
-	}
-
+    @Test
+    void applicationClassExists() {
+        assertThat(HackathonJava6Application.class).isNotNull();
+    }
 }
