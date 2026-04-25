@@ -25,11 +25,11 @@ import lombok.*;
 public class Bank {
 	
 	@Id
-    @Column(name = "bankCode")
+    @Column(name = "bank_code")
     private Integer bankCode;
 
     @NotBlank
-    @Column(name = "bankName", nullable = false)
+    @Column(name = "bank_name", nullable = false)
     private String bankName;
 
     @OneToMany(mappedBy = "bank", fetch = FetchType.LAZY)
