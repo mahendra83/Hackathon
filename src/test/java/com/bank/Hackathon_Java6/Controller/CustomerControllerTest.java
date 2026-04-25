@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.bank.Hackathon_Java6.Dto.CustomerLoginDTO;
 import com.bank.Hackathon_Java6.Dto.CustomerRegisterDTO;
+import com.bank.Hackathon_Java6.Dto.ForgotCustomerIdRequestDTO;
 import com.bank.Hackathon_Java6.Service.CustomerService;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -42,5 +43,24 @@ class CustomerControllerTest {
         assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
         assertThat(response.getBody()).containsEntry("message", "Login successful");
         verify(customerService).login(dto);
+    }
+
+    @Test
+    void forgotCustomerIdDelegatesToService() {
+        ForgotCustomerIdRequestDTO dto = ForgotCustomerIdRequestDTO.builder()
+                .email("test@example.com")
+                .build();
+        when(customerService.forgotCustomerId(dto)).thenReturn(Map.of(
+                "emailExists", true,
+                "message", "Customer ID reminder processed"
+        ));
+
+        ResponseEntity<Map<String, Object>> response = controller.forgotCustomerId(dto);
+
+        assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
+        assertThat(response.getBody())
+                .containsEntry("emailExists", true)
+                .containsEntry("message", "Customer ID reminder processed");
+        verify(customerService).forgotCustomerId(dto);
     }
 }

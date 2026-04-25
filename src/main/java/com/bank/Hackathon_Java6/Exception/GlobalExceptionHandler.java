@@ -6,7 +6,6 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -18,10 +17,9 @@ import jakarta.servlet.http.HttpServletRequest;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-	
-	@ExceptionHandler(EmailAlreadyExistsException.class)
-    public ResponseEntity<?> handleEmailExists(EmailAlreadyExistsException ex) {
 
+    @ExceptionHandler(EmailAlreadyExistsException.class)
+    public ResponseEntity<?> handleEmailExists(EmailAlreadyExistsException ex) {
         return ResponseEntity
                 .status(ex.getStatus())
                 .body(Map.of(
@@ -31,19 +29,30 @@ public class GlobalExceptionHandler {
                         "message", ex.getMessage()
                 ));
     }
-	
-	@ExceptionHandler(InvalidCredentialsException.class)
-	public ResponseEntity<?> handleInvalidCredentials(InvalidCredentialsException ex) {
 
-	    return ResponseEntity
-	            .status(ex.getStatus())
-	            .body(Map.of(
-	                    "timestamp", LocalDateTime.now(),
-	                    "status", 400,
-	                    "error", "Bad Request",
-	                    "message", ex.getMessage()
-	            ));
-	}
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<?> handleInvalidCredentials(InvalidCredentialsException ex) {
+        return ResponseEntity
+                .status(ex.getStatus())
+                .body(Map.of(
+                        "timestamp", LocalDateTime.now(),
+                        "status", 400,
+                        "error", "Bad Request",
+                        "message", ex.getMessage()
+                ));
+    }
+
+    @ExceptionHandler(LoginRateLimitExceededException.class)
+    public ResponseEntity<?> handleLoginRateLimit(LoginRateLimitExceededException ex) {
+        return ResponseEntity
+                .status(ex.getStatus())
+                .body(Map.of(
+                        "timestamp", LocalDateTime.now(),
+                        "status", 429,
+                        "error", "Too Many Requests",
+                        "message", ex.getMessage()
+                ));
+    }
 
     @ExceptionHandler(CustomerNotFoundException.class)
     public ResponseEntity<ErrorResponseDTO> handleCustomerNotFound(
@@ -67,12 +76,6 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDTO> handleMaxAccountsExceeded(
             MaxFavoriteAccountsExceededException ex, HttpServletRequest request) {
         return buildError(HttpStatus.UNPROCESSABLE_ENTITY, ex.getMessage(), request.getRequestURI(), null);
-    }
-
-    @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ErrorResponseDTO> handleAccessDenied(
-            AccessDeniedException ex, HttpServletRequest request) {
-        return buildError(HttpStatus.FORBIDDEN, ex.getMessage(), request.getRequestURI(), null);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

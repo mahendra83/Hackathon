@@ -28,13 +28,32 @@ public class RegistrationMailServiceImpl implements RegistrationMailService {
 
     @Override
     public MailDeliveryResult sendRegistrationSuccessEmail(Customer customer) {
+        return sendMail(
+                customer,
+                "Registration successful",
+                buildRegistrationMessage(customer),
+                "Registration email"
+        );
+    }
+
+    @Override
+    public MailDeliveryResult sendCustomerIdReminderEmail(Customer customer) {
+        return sendMail(
+                customer,
+                "Customer ID reminder",
+                buildCustomerIdReminderMessage(customer),
+                "Customer ID reminder email"
+        );
+    }
+
+    private MailDeliveryResult sendMail(Customer customer, String subject, String body, String logPrefix) {
         if (!mailEnabled) {
-            log.info("Registration email skipped for customer {} because app.mail.enabled=false", customer.getCustomerId());
+            log.info("{} skipped for customer {} because app.mail.enabled=false", logPrefix, customer.getCustomerId());
             return new MailDeliveryResult("SKIPPED", "Mail disabled because app.mail.enabled=false");
         }
 
         if (fromAddress == null || fromAddress.isBlank()) {
-            log.warn("Registration email skipped for customer {} because app.mail.from is not configured", customer.getCustomerId());
+            log.warn("{} skipped for customer {} because app.mail.from is not configured", logPrefix, customer.getCustomerId());
             return new MailDeliveryResult("SKIPPED", "Mail sender is not configured");
         }
 
@@ -43,21 +62,21 @@ public class RegistrationMailServiceImpl implements RegistrationMailService {
             MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
             helper.setFrom(fromAddress);
             helper.setTo(customer.getEmail());
-            helper.setSubject("Registration successful");
-            helper.setText(buildMessage(customer), false);
+            helper.setSubject(subject);
+            helper.setText(body, false);
             mailSender.send(message);
-            log.info("Registration email sent to {}", customer.getEmail());
-            return new MailDeliveryResult("SENT", "Registration email sent successfully");
+            log.info("{} sent to {}", logPrefix, customer.getEmail());
+            return new MailDeliveryResult("SENT", subject + " sent successfully");
         } catch (MailAuthenticationException ex) {
             log.error("Mail authentication failed for sender {}", fromAddress, ex);
             return new MailDeliveryResult("FAILED", "SMTP authentication failed. For Gmail, use an App Password instead of your normal password.");
         } catch (MailException | MessagingException ex) {
-            log.error("Failed to send registration email to {}", customer.getEmail(), ex);
-            return new MailDeliveryResult("FAILED", "Registration email could not be sent");
+            log.error("Failed to send {} to {}", logPrefix, customer.getEmail(), ex);
+            return new MailDeliveryResult("FAILED", subject + " could not be sent");
         }
     }
 
-    private String buildMessage(Customer customer) {
+    private String buildRegistrationMessage(Customer customer) {
         return """
                 Hello %s,
 
@@ -66,6 +85,19 @@ public class RegistrationMailServiceImpl implements RegistrationMailService {
                 Customer ID: %s
 
                 You can now use the application with your registered email address.
+
+                Regards,
+                Favorite Payee Team
+                """.formatted(customer.getName(), customer.getCustomerId());
+    }
+
+    private String buildCustomerIdReminderMessage(Customer customer) {
+        return """
+                Hello %s,
+
+                We received a request to remind you of your customer ID.
+
+                Your customer ID is: %s
 
                 Regards,
                 Favorite Payee Team

@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.bank.Hackathon_Java6.Dto.CustomerLoginDTO;
 import com.bank.Hackathon_Java6.Dto.CustomerRegisterDTO;
+import com.bank.Hackathon_Java6.Dto.ForgotCustomerIdRequestDTO;
 import com.bank.Hackathon_Java6.Service.CustomerService;
 
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -38,5 +39,12 @@ public class CustomerController {
             @Valid @RequestBody CustomerLoginDTO dto) {
 
         return ResponseEntity.ok(service.login(dto));
+    }
+
+    @PostMapping("/forgot-customer-id")
+    public ResponseEntity<Map<String, Object>> forgotCustomerId(
+            @Valid @RequestBody ForgotCustomerIdRequestDTO dto) {
+
+        return ResponseEntity.ok(service.forgotCustomerId(dto));
     }
 }

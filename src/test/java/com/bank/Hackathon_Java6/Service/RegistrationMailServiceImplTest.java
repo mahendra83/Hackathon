@@ -71,6 +71,20 @@ class RegistrationMailServiceImplTest {
         assertThat(result.message()).contains("SMTP authentication failed");
     }
 
+    @Test
+    void sendCustomerIdReminderEmailSendsMessageWhenConfigured() {
+        ReflectionTestUtils.setField(service, "mailEnabled", true);
+        ReflectionTestUtils.setField(service, "fromAddress", "from@example.com");
+        MimeMessage message = new MimeMessage(Session.getInstance(new Properties()));
+
+        when(mailSender.createMimeMessage()).thenReturn(message);
+
+        MailDeliveryResult result = service.sendCustomerIdReminderEmail(customer());
+
+        assertThat(result.status()).isEqualTo("SENT");
+        verify(mailSender).send(message);
+    }
+
     private Customer customer() {
         return Customer.builder()
                 .customerId(12345)

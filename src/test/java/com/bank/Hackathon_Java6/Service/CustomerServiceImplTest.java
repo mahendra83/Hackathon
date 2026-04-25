@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.bank.Hackathon_Java6.Dto.CustomerLoginDTO;
 import com.bank.Hackathon_Java6.Dto.CustomerRegisterDTO;
+import com.bank.Hackathon_Java6.Dto.ForgotCustomerIdRequestDTO;
 import com.bank.Hackathon_Java6.Entity.Customer;
 import com.bank.Hackathon_Java6.Exception.EmailAlreadyExistsException;
 import com.bank.Hackathon_Java6.Exception.InvalidCredentialsException;
@@ -21,6 +22,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 
 class CustomerServiceImplTest {
 
@@ -28,11 +30,13 @@ class CustomerServiceImplTest {
     private final RegistrationMailService registrationMailService = mock(RegistrationMailService.class);
     private final JwtService jwtService = mock(JwtService.class);
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+    private final LoginAttemptService loginAttemptService = mock(LoginAttemptService.class);
     private final CustomerServiceImpl service = new CustomerServiceImpl(
             customerRepository,
             registrationMailService,
             jwtService,
-            passwordEncoder
+            passwordEncoder,
+            loginAttemptService
     );
 
     @Test
@@ -148,5 +152,45 @@ class CustomerServiceImplTest {
 
         assertThatThrownBy(() -> service.login(wrongPassword))
                 .isInstanceOf(InvalidCredentialsException.class);
+    }
+
+    @Test
+    void forgotCustomerIdSendsReminderWhenEmailExists() {
+        ForgotCustomerIdRequestDTO dto = ForgotCustomerIdRequestDTO.builder()
+                .email("test@example.com")
+                .build();
+        Customer customer = Customer.builder()
+                .customerId(12345)
+                .name("Test User")
+                .email("test@example.com")
+                .build();
+
+        when(customerRepository.findByEmail("test@example.com")).thenReturn(Optional.of(customer));
+        when(registrationMailService.sendCustomerIdReminderEmail(customer))
+                .thenReturn(new MailDeliveryResult("SENT", "Customer ID reminder sent successfully"));
+
+        Map<String, Object> response = service.forgotCustomerId(dto);
+
+        assertThat(response)
+                .containsEntry("emailExists", true)
+                .containsEntry("customerId", 12345)
+                .containsEntry("mailStatus", "SENT");
+        verify(registrationMailService).sendCustomerIdReminderEmail(customer);
+    }
+
+    @Test
+    void forgotCustomerIdReturnsNotFoundWhenEmailDoesNotExist() {
+        ForgotCustomerIdRequestDTO dto = ForgotCustomerIdRequestDTO.builder()
+                .email("missing@example.com")
+                .build();
+
+        when(customerRepository.findByEmail("missing@example.com")).thenReturn(Optional.empty());
+
+        Map<String, Object> response = service.forgotCustomerId(dto);
+
+        assertThat(response)
+                .containsEntry("emailExists", false)
+                .containsEntry("message", "No customer found for this email");
+        verify(registrationMailService, never()).sendCustomerIdReminderEmail(any(Customer.class));
     }
 }
